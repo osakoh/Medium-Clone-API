@@ -1,0 +1,1 @@
+## common apps: holds an abstract model common to other apps.

@@ -1,0 +1,146 @@
+version: "3.9"
+
+services:
+  # blog-api service
+  api:
+    build:
+      context: .
+      dockerfile: ./docker/local/django/Dockerfile
+    command: /start
+    container_name: blog-api
+    # map host to container. To allow for immediate change in container when the host changes
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/mediafiles
+    # Expose: Ports are accessible to only the linked services and NOT the host machine
+    expose:
+      - "8000"
+    #    # Exposes container port. Must be specified as a (quoted) string, to avoid conflicts with yaml base-60 float
+    #    ports:
+    #      - "8000:8000"
+    env_file:
+      - ./.envs/.local/.django
+      - ./.envs/.local/.postgres
+    # 'postgres', 'mailhog', & 'redis' services must be running before starting the 'api' service
+    depends_on:
+      - postgres
+      - mailhog
+      - redis
+    networks:
+      - blog-api-net
+
+  # postgres service
+  postgres:
+    build:
+      context: .
+      dockerfile: ./docker/local/postgres/Dockerfile
+    container_name: postgres
+    # map host to container. To allow for data storage
+    volumes:
+      - local_postgres_data:/var/lib/postgresql/data
+      - local_postgres_data_backups:/backups
+    env_file:
+      - ./.envs/.local/.postgres
+    networks:
+      - blog-api-net
+
+  # mailhog service: fake SMTP email testing tool for development
+  mailhog:
+    image: mailhog/mailhog:v1.0.0
+    container_name: mailhog
+    # Exposes container port. Must be specified as a (quoted) string, to avoid conflicts with yaml base-60 float
+    ports:
+      - "8025:8025"
+    networks:
+      - blog-api-net
+
+
+  # redis service
+  redis:
+    image: redis:6-alpine
+    container_name: redis
+    networks:
+      - blog-api-net
+
+
+  # celery service
+  celery_worker:
+    build:
+      context: .
+      dockerfile: ./docker/local/django/Dockerfile
+    command: /start-celeryworker
+    container_name: celery_worker
+    # map host to container. To allow for immediate change in container when the host changes
+    volumes:
+      - .:/app
+    env_file:
+      - ./.envs/.local/.django
+      - ./.envs/.local/.postgres
+    # 'redis', 'postgres', & 'mailhog' services must be running before starting the 'celery_worker' service
+    depends_on:
+      - redis
+      - postgres
+      - mailhog
+    networks:
+      - blog-api-net
+
+
+  # flower service
+  flower:
+    build:
+      context: .
+      dockerfile: ./docker/local/django/Dockerfile
+    command: /start-flower
+    container_name: flower
+    # map host to container. To allow for immediate change in container when the host changes
+    volumes:
+      - .:/app
+    env_file:
+      - ./.envs/.local/.django
+      - ./.envs/.local/.postgres
+    # Exposes container port. Must be specified as a (quoted) string, to avoid conflicts with yaml base-60 float
+    ports:
+      - "5555:5555"
+    # 'redis' & 'postgres' services must be running before starting the 'flower' service
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - blog-api-net
+
+
+
+  # nginx service
+  nginx:
+    restart: always
+    # 'api' service must the running before starting the 'nginx' service
+    depends_on:
+      - api
+    # map host to container. To allow for immediate change in container when the host changes
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/mediafiles
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+    # Exposes container port. Must be specified as a (quoted) string, to avoid conflicts with yaml base-60 float
+    ports:
+      - "8080:80"
+    networks:
+      - blog-api-net
+
+
+
+# network used for communication between services
+networks:
+  blog-api-net:
+    driver: bridge
+
+# map host to container. To allow for immediate change in container when the host changes
+# shared volumes between services
+volumes:
+  local_postgres_data: { }
+  local_postgres_data_backups: { }
+  static_volume:
+  media_volume:

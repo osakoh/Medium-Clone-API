@@ -1,0 +1,10 @@
+.skip/
+skip/
+.idea/
+env
+venv/
+**/.git
+.gitignore
+.vscode
+README.md
+LICENSE

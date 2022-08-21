@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+# exist script if any command fails
+set -o errexit
+# exist script if any pipe command fails
+set -o pipefail
+# exist script if any variable is not set
+set -o nounset
+
+# set working directory
+working_dir="$(dirname ${0})"
+
+# source command reads and executes commands from the file specified as its argument in the current shell environment.
+# It is useful to load functions, variables, and configuration files into shell scripts.
+source "${working_dir}/_sourced/constants.sh"
+
+# source command reads and executes commands from the file specified as its argument in the current shell environment.
+# It is useful to load functions, variables, and configuration files into shell scripts.
+source "${working_dir}/_sourced/messages.sh"
+
+# pass the argument(text) into the message_welcome function sourced from 'messages.sh'
+message_welcome "List of backups available:"
+
+# list contains of directory including permission type, owner, time created, & file name
+ls -lht "${BACKUP_DIR_PATH}"

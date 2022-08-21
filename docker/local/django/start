@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# exist script if any command fails
+set -o errexit
+# exist script if any pipe command fails
+set -o pipefail
+# exist script if any variable is not set
+set -o nounset
+
+#echo "************* 'makemigrations now running.......  *************"
+#python3 manage.py makemigrations
+
+echo "************* 'migrate' now running.......  *************"
+python3 manage.py migrate
+
+echo "************* 'collectstatic --no-input' now running.......  *************"
+python3 manage.py collectstatic --noinput
+#python3 manage.py collectstatic --noinput -v2
+
+echo "************* 'runserver 0.0.0.0:8000' now running.......  *************"
+python3 manage.py runserver 0.0.0.0:8000

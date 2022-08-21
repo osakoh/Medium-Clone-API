@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+
+# exist script if any command fails
+set -o errexit
+# exist script if any pipe command fails
+set -o pipefail
+# exist script if any variable is not set
+set -o nounset
+
+# set working directory
+working_dir="$(dirname ${0})"
+
+# source command reads and executes commands from the file specified as its argument in the current shell environment.
+# It is useful to load functions, variables, and configuration files into shell scripts.
+source "${working_dir}/_sourced/constants.sh"
+
+# source command reads and executes commands from the file specified as its argument in the current shell environment.
+# It is useful to load functions, variables, and configuration files into shell scripts.
+source "${working_dir}/_sourced/messages.sh"
+
+if [[ -z ${1+x} ]]; then
+  message_error "Backup filename is not specified yet it is a required parameter. Make sure you provide one and try again."
+  exit 1
+fi
+
+backup_filename="${BACKUP_DIR_PATH}/${1}"
+
+if [[ ! -f "${backup_filename}" ]]; then
+  message_error "No backup with the specified filename found. Check out the 'backups' maintenance script output to see if there is one and try again."
+  exit 1
+fi
+
+# pass the argument(text) into the message_welcome function sourced from 'messages.sh'
+message_welcome "Restoring the '${POSTGRES_DB}' database from the '${backup_filename}' backup..."
+
+if [[ "${POSTGRES_USER}" == "postgres" ]]; then
+  message_error "Restoring as a 'postgres' user is not allowed. Assign 'POSTGRES_USER' env with another user and try again"
+  exit 1
+fi
+
+# export variables
+export PGHOST="${POSTGRES_HOST}"
+export PGPORT="${POSTGRES_PORT}"
+export PGUSER="${POSTGRES_USER}"
+export PGPASSWORD="${POSTGRES_PASSWORD}"
+export PGDATABASE="${POSTGRES_DB}"
+
+# pass the argument(text) into the 'message_info' function sourced from 'messages.sh'
+message_info "Dropping the database..."
+dropdb "${PGDATABASE}"
+
+# pass the argument(text) into the 'message_info' function sourced from 'messages.sh'
+message_info "Creating a new database..."
+createdb --owner="${POSTGRES_USER}"
+
+# pass the argument(text) into the 'message_info' function sourced from 'messages.sh'
+message_info "Applying the backup to the new database..."
+
+# Restoring the Dump:
+# Syntax: psql dbname < infile
+gunzip -c "${backup_filename}" | psql "${POSTGRES_DB}"
+
+# pass the argument(text) into the 'message_success' function sourced from 'messages.sh'
+message_success "The '${POSTGRES_DB}' database has been restored from the '${backup_filename}' backup."

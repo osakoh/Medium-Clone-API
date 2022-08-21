@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# exist script if any command fails
+set -o errexit
+# exist script if any variable is not set
+set -o nounset
+
+# auto-restart celery when changes are made during development(locally)
+watchmedo auto-restart -d api_project/ -p '*.py' -- celery -A api_project worker --loglevel=info

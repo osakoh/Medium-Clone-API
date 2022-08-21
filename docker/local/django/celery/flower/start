@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# exist script if any command fails
+set -o errexit
+# exist script if any variable is not set
+set -o nounset
+
+worker_ready() {
+  celery -A api_project inspect ping
+}
+
+until worker_ready; do
+  echo >&2 "************* Not available: Celery workers *************"
+  sleep 1
+done
+echo >&2 "************* Celery workers are now available *************"
+
+celery -A api_project \
+  --broker="${CELERY_BROKER}" \
+  flower \
+  --basic_auth="${CELERY_FLOWER_USER}:${CELERY_FLOWER_PASSWORD}"
