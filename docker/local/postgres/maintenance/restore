@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-# exist script if any command fails
+# exit script if any command fails
 set -o errexit
-# exist script if any pipe command fails
+# exit script if any pipe command fails
 set -o pipefail
-# exist script if any variable is not set
+# exit script if any variable is not set
 set -o nounset
 
 # set working directory
